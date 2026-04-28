@@ -3,12 +3,18 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  // Thêm đường dẫn homepage
+  // https://[your-user-name].github.io/[your-repo-name]/
+  "homepage": "https://danh-nt.github.io/wc2026/",
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
+    // Thêm command predeploy & deploy app
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "start": "node server.ts"
   },
   "dependencies": {
