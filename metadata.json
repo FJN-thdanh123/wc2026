@@ -1,0 +1,6 @@
+{
+  "name": "World Cup 2026 Predictor",
+  "description": "Vote for World Cup 2026 matches with point tracking synced to Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
