@@ -196,8 +196,35 @@ export default function App() {
     }
   };
 
+  const parseFullMatchTime = (timeStr: string) => {
+    try {
+      const [datePart, timePart] = timeStr.split(" ");
+      const date = parseSheetDate(datePart);
+      if (!date || !timePart) return null;
+      
+      const [hours, minutes] = timePart.split(":").map(Number);
+      date.setHours(hours || 0, minutes || 0, 0, 0);
+      return date;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const isMatchStarted = (timeStr: string) => {
+    const matchTime = parseFullMatchTime(timeStr);
+    if (!matchTime) return false;
+    return new Date() >= matchTime;
+  };
+
   const handlePredict = async (matchId: string, prediction: string) => {
     if (!tokens || !user) return;
+
+    const match = matches.find(m => m.id === matchId);
+    if (match && isMatchStarted(match.time)) {
+      setError("Trận đấu đã bắt đầu, không thể bình chọn hoặc thay đổi.");
+      return;
+    }
+
     setSubmitting(matchId);
     try {
       const res = await fetch("/api/predict", {
@@ -513,24 +540,26 @@ export default function App() {
 
                             <div className="flex gap-1.5 mt-3">
                               {['HOME', 'DRAW', 'AWAY'].map((type) => {
-                                const isSelected = userVotes.find(v => v.matchId === match.id)?.prediction === type;
-                                const isFinished = match.status === "Finished";
-                                
-                                return (
-                                  <button
-                                    key={type}
-                                    disabled={submitting === match.id || isFinished}
-                                    onClick={() => handlePredict(match.id, type)}
-                                    className={`flex-1 py-1.5 px-1 rounded-lg font-bold text-[10px] transition-all disabled:opacity-50 ${
-                                      isSelected 
-                                        ? 'bg-[#0f172a] text-white ring-1 ring-offset-1 ring-red-500' 
-                                        : 'bg-slate-50 hover:bg-slate-200 text-slate-800'
-                                    }`}
-                                  >
-                                    {submitting === match.id ? '...' : type}
-                                    {isSelected && <span className="ml-1 opacity-70">✓</span>}
-                                  </button>
-                                );
+                                  const isSelected = userVotes.find(v => v.matchId === match.id)?.prediction === type;
+                                  const isFinished = match.status === "Finished";
+                                  const started = isMatchStarted(match.time);
+                                  
+                                  return (
+                                    <button
+                                      key={type}
+                                      disabled={submitting === match.id || isFinished || started}
+                                      onClick={() => handlePredict(match.id, type)}
+                                      className={`flex-1 py-1.5 px-1 rounded-lg font-bold text-[10px] transition-all disabled:opacity-50 ${
+                                        isSelected 
+                                          ? 'bg-[#0f172a] text-white ring-1 ring-offset-1 ring-red-500' 
+                                          : 'bg-slate-50 hover:bg-slate-200 text-slate-800'
+                                      }`}
+                                    >
+                                      {submitting === match.id ? '...' : type}
+                                      {isSelected && <span className="ml-1 opacity-70">✓</span>}
+                                      {started && !isFinished && !isSelected && <span className="ml-1 text-[8px] opacity-50">(Locked)</span>}
+                                    </button>
+                                  );
                               })}
                             </div>
 

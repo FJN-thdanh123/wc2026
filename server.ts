@@ -130,6 +130,41 @@ app.post("/api/predict", async (req, res) => {
 
     const sheets = google.sheets({ version: "v4", auth });
 
+    // Validate match time before allowing prediction
+    const matchesRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "TranDau!A:E",
+    });
+    const matchesRows = matchesRes.data.values || [];
+    const match = matchesRows.find(row => row[0] === matchId);
+    
+    if (match) {
+      const matchTimeStr = match[1]; // Assuming column B is time
+      const [datePart, timePart] = (matchTimeStr || "").split(" ");
+      if (datePart && timePart) {
+        const parts = datePart.split(/[-/]/);
+        if (parts.length >= 2) {
+          const today = new Date();
+          let day, month, year;
+          if (parts[0].length === 4) {
+            year = parseInt(parts[0]);
+            month = parseInt(parts[1]) - 1;
+            day = parseInt(parts[2]);
+          } else {
+            day = parseInt(parts[0]);
+            month = parseInt(parts[1]) - 1;
+            year = parts.length >= 3 ? parseInt(parts[2]) : today.getFullYear();
+          }
+          const [hours, minutes] = timePart.split(":").map(Number);
+          const matchDate = new Date(year, month, day, hours || 0, minutes || 0);
+          
+          if (new Date() >= matchDate) {
+            return res.status(403).json({ error: "Trận đấu đã bắt đầu, không thể bình chọn." });
+          }
+        }
+      }
+    }
+
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
       range: "GhiNhan!A:D",
